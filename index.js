@@ -1,86 +1,80 @@
 const cheerio = require('cheerio');
 const request = require('request');
 const fs = require('fs');
+const path = require('path');
 
 const baseURL = "http://www.cs.sfu.ca/~ashriram/Courses/2017/CS300/";
-const url = "http://www.cs.sfu.ca/~ashriram/Courses/2017/CS300/includes/schedule.html";
-const baseDir = process.argv[2];
+const scheduleURL = "http://www.cs.sfu.ca/~ashriram/Courses/2017/CS300/includes/schedule.html";
+const baseDirectory = process.argv[2] || path.join(__dirname, 'data');
 
-if (!fs.existsSync(baseDir)) {
-  fs.mkdirSync(baseDir);
+
+function createDirectory(name, callback) {
+  if (!fs.existsSync(name)) {
+    return fs.mkdirSync(name);
+  }
 }
 
-function resolveLinks(links, callback) {
-  var dir;
+createDirectory(baseDirectory);
 
-  links.forEach(function resolveSingleLink(link, index) {
-    var folderName = link.match(/.Week/i);
-    if (folderName) {
-      folderName = link.slice(folderName.index + 1, link.length - 1);
-    }
 
-    dir = baseDir + folderName;
-
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir);
-    }
-
-    callback(link, dir);
-  });
-}
-
-function requestPDF(link, dir) {
-  request(link, function openLink(err, response, body) {
-    // process.chdir(dir);
+function getWeeks() {
+  request(scheduleURL, (err, response, body) => {
     if (err) return console.error(err);
 
-    $ = cheerio.load(body);
+    let links = [];
+    let directories = [];
 
-    $anchorTags = $('a');
+    const $ = cheerio.load(body);
 
-    $anchorTags.each(function downloadPDFS(index, element) {
-      if ($(element).attr('href').match(/^[a-z0-9_-]+\.*[a-z0-9_-]+$/i)) {
-        var file = fs.createWriteStream($(element).attr('href'));
+    $('table table table a').each((index, element) => {
+      const linkURL = $(element).attr('href');
 
-        request(link + $(element).attr('href'), function(err, response, body) {
-            response.pipe(file);
-        });
-      }
+      if (linkURL.match(/\.\.\/slides\//i)) {
+        const formattedURL = linkURL.slice(3); // removes ../
+        const fullURL = baseURL + formattedURL;
 
-      if ($(element).attr('href').match(/^[/a-z]+[/]$/i)) {
-        var directoryName = $(element).attr('href').slice(0, $(element).attr('href').length - 2);
-        var subLink = link + $(element).attr('href');
+        const directoryName = formattedURL.slice(7); // removes slides/
+        const directory = path.join(baseDirectory, directoryName);
+        createDirectory(directory);
 
-        if (!fs.existsSync(directoryName)) {
-            fs.mkdirSync(directoryName);
-        }
-        directoryName = dir + '/' + directoryName;
-
-        requestPDF(subLink, directoryName);
+        getNotes(fullURL, directory);
       }
     });
   });
 }
 
-function getLinks(callback, secondcallback) {
-  var linksToFollow = [];
-  request(url, function openBaseURL(err, response, body) {
+function getNotes(url, directory) {
+  request(url, (err, response, body) => {
     if (err) return console.error(err);
 
-    $ = cheerio.load(body);
+    const $ = cheerio.load(body);
 
-    $("table table table a").each(function pushLinks(index, element) {
-      var $linkTag = $(element);
+    const $links = $('a');
+    const $linkSelection = $links.slice(5, $links.length - 1); // remove unwanted default links
 
-      if ($linkTag.attr('href').match(/\.\.slides\//i)) {
-        let cleanedAttr = $linkTag.attr('href').slice(3);
-        let changeURL = baseURL + cleanedAttr;
-        linksToFollow.push(changeURL);
+    $linkSelection.each((index, element) => {
+      const linkURL = $(element).attr('href');
+      const fullURL = url + linkURL;
+      const nextLocation = path.join(directory, linkURL);
+
+      if (linkURL.includes('/')) {
+        createDirectory(nextLocation);
+        return getNotes(fullURL, nextLocation);
       }
-    });
 
-    callback(linksToFollow, secondcallback);
+      download(fullURL, nextLocation);
+    });
   });
 }
 
-getLinks(resolveLinks, requestPDF);
+function download(url, location) {
+  const file = fs.createWriteStream(location);
+
+  request(url)
+    .pipe(file)
+    .on('error', function(error){
+      console.error(error);
+    });
+}
+
+getWeeks();

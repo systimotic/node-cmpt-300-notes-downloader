@@ -3,10 +3,6 @@ const request = require('request');
 const fs = require('fs');
 const path = require('path');
 
-const baseURL = "http://www.cs.sfu.ca/~ashriram/Courses/2017/CS300/";
-const scheduleURL = "http://www.cs.sfu.ca/~ashriram/Courses/2017/CS300/includes/schedule.html";
-const baseDirectory = process.argv[2] || path.join(__dirname, 'data');
-
 
 function createDirectory(name, callback) {
   if (!fs.existsSync(name)) {
@@ -14,34 +10,6 @@ function createDirectory(name, callback) {
   }
 }
 
-createDirectory(baseDirectory);
-
-
-function getWeeks() {
-  request(scheduleURL, (err, response, body) => {
-    if (err) return console.error(err);
-
-    let links = [];
-    let directories = [];
-
-    const $ = cheerio.load(body);
-
-    $('table table table a').each((index, element) => {
-      const linkURL = $(element).attr('href');
-
-      if (linkURL.match(/\.\.\/slides\//i)) {
-        const formattedURL = linkURL.slice(3); // removes ../
-        const fullURL = baseURL + formattedURL;
-
-        const directoryName = formattedURL.slice(7); // removes slides/
-        const directory = path.join(baseDirectory, directoryName);
-        createDirectory(directory);
-
-        getNotes(fullURL, directory);
-      }
-    });
-  });
-}
 
 function getNotes(url, directory) {
   request(url, (err, response, body) => {
@@ -77,4 +45,9 @@ function download(url, location) {
     });
 }
 
-getWeeks();
+
+const indexURL = "http://www.cs.sfu.ca/~ashriram/Courses/2017/CS300/slides";
+const baseDirectory = process.argv[2] || path.join(__dirname, 'data');
+
+createDirectory(baseDirectory);
+getNotes(indexURL, baseDirectory);

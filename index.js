@@ -39,7 +39,7 @@ function requestPDF(link, dir) {
     $anchorTags = $('a');
 
     $anchorTags.each(function downloadPDFS(index, element) {
-      if ($(element).attr('href').match(/^[a-zA-Z0-9_-]+\.*[a-zA-Z0-9_-]+$/i)) {
+      if ($(element).attr('href').match(/^[a-z0-9_-]+\.*[a-z0-9_-]+$/i)) {
         var file = fs.createWriteStream($(element).attr('href'));
 
         request(link + $(element).attr('href'), function(err, response, body) {
@@ -47,7 +47,7 @@ function requestPDF(link, dir) {
         });
       }
 
-      if ($(element).attr('href').match(/^[/a-zA-Z]+[/]$/i)) {
+      if ($(element).attr('href').match(/^[/a-z]+[/]$/i)) {
         var directoryName = $(element).attr('href').slice(0, $(element).attr('href').length - 2);
         var subLink = link + $(element).attr('href');
 
@@ -72,7 +72,7 @@ function getLinks(callback, secondcallback) {
     $("table table table a").each(function pushLinks(index, element) {
       var $linkTag = $(element);
 
-      if ($linkTag.attr('href').match(/..slides\//i)) {
+      if ($linkTag.attr('href').match(/\.\.slides\//i)) {
         let cleanedAttr = $linkTag.attr('href').slice(3);
         let changeURL = baseURL + cleanedAttr;
         linksToFollow.push(changeURL);

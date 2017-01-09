@@ -46,7 +46,7 @@ function download(url, location) {
 }
 
 
-const indexURL = "http://www.cs.sfu.ca/~ashriram/Courses/2017/CS300/slides";
+const indexURL = "http://www.cs.sfu.ca/~ashriram/Courses/2017/CS300/slides/";
 const baseDirectory = process.argv[2] || path.join(__dirname, 'data');
 
 createDirectory(baseDirectory);

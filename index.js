@@ -32,7 +32,7 @@ function resolveLinks(links, callback) {
 function requestPDF(link, dir) {
   request(link, function openLink(err, response, body) {
     // process.chdir(dir);
-    if (err) return console.error(error);
+    if (err) return console.error(err);
 
     $ = cheerio.load(body);
 
@@ -65,7 +65,7 @@ function requestPDF(link, dir) {
 function getLinks(callback, secondcallback) {
   var linksToFollow = [];
   request(url, function openBaseURL(err, response, body) {
-    if (err) return console.error(error);
+    if (err) return console.error(err);
 
     $ = cheerio.load(body);
 
